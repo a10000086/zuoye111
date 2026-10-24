@@ -338,25 +338,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ========== 摄像头手势控制（异步加载，失败不影响游戏） ==========
     const videoElement = document.getElementById('webcam');
-    let lastHandX = null;
-    let lastHandAngle = null;
+    const gestureStatus = document.getElementById('gestureStatus');
+    let moveAnchorX = null;
+    let rotationAnchorAngle = null;
     let lastMoveTime = 0;
     let lastRotateTime = 0;
     let lastFistTime = 0;
+    let wasFist = false;
 
     const MOVE_COOLDOWN = 180;
     const ROTATE_COOLDOWN = 350;
-    const FIST_COOLDOWN = 1500;
-    const MOVE_THRESHOLD = 0.08;
-    const ROTATE_THRESHOLD = 25;
+    const FIST_COOLDOWN = 1200;
+    const MOVE_THRESHOLD = 0.1;
+    const ROTATE_THRESHOLD = 20;
+
+    function setGestureStatus(message) {
+        if (gestureStatus.textContent !== message) {
+            gestureStatus.textContent = message;
+        }
+    }
 
     async function initGestureControl() {
         if (typeof Hands === 'undefined' || typeof Camera === 'undefined') {
-            console.log("手势识别库加载失败，可使用键盘操作");
+            setGestureStatus('手势识别库加载失败，请检查网络或使用键盘操作');
+            console.error('手势识别库加载失败');
+            return;
+        }
+        if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+            setGestureStatus('摄像头需要在 HTTPS 或 localhost 页面中使用');
             return;
         }
 
         try {
+            setGestureStatus('请在浏览器弹窗中允许使用摄像头');
             const hands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
             });
@@ -376,81 +390,108 @@ document.addEventListener('DOMContentLoaded', () => {
                 height: 480
             });
             await camera.start();
+            setGestureStatus('摄像头已连接，请将右手置于画面中');
         } catch (e) {
-            console.log("摄像头启动失败：", e.message);
+            const messages = {
+                NotAllowedError: '摄像头权限被拒绝，请在浏览器设置中允许访问',
+                NotFoundError: '未找到可用摄像头',
+                NotReadableError: '摄像头正被其他应用占用',
+                SecurityError: '浏览器安全策略阻止了摄像头访问'
+            };
+            setGestureStatus(messages[e.name] || `摄像头启动失败：${e.message || '未知错误'}`);
+            console.error('摄像头启动失败', e);
         }
     }
 
     function handleHandGesture(results) {
         if (!results.multiHandLandmarks?.length) {
-            lastHandX = null;
-            lastHandAngle = null;
+            moveAnchorX = null;
+            rotationAnchorAngle = null;
+            wasFist = false;
+            setGestureStatus('摄像头已连接，请将右手置于画面中');
             return;
         }
 
-        // 只识别右手
-        const handIdx = results.multiHandedness.findIndex(h => h.label === 'Right');
-        if (handIdx === -1) return;
+        // MediaPipe assumes mirrored input; the unmirrored webcam stream labels the physical right hand as Left.
+        const handIdx = results.multiHandedness?.findIndex(hand => hand.label === 'Left') ?? -1;
+        if (handIdx === -1) {
+            moveAnchorX = null;
+            rotationAnchorAngle = null;
+            wasFist = false;
+            setGestureStatus('已检测到手，请使用右手操控');
+            return;
+        }
         const landmarks = results.multiHandLandmarks[handIdx];
         const now = Date.now();
+
+        if (checkIsFist(landmarks)) {
+            if (!wasFist && now - lastFistTime > FIST_COOLDOWN) {
+                resetGame();
+                lastFistTime = now;
+                setGestureStatus('已识别握拳，游戏已重置');
+            }
+            wasFist = true;
+            return;
+        }
+        wasFist = false;
 
         const wrist = landmarks[0];
         const middleMcp = landmarks[9];
         const centerX = (wrist.x + middleMcp.x) / 2;
 
-        // 左右移动（镜像适配：你的左边=画面右边）
-        if (lastHandX !== null && now - lastMoveTime > MOVE_COOLDOWN) {
-            const delta = centerX - lastHandX;
+        if (moveAnchorX === null) {
+            moveAnchorX = centerX;
+        } else if (now - lastMoveTime > MOVE_COOLDOWN) {
+            const delta = centerX - moveAnchorX;
+            // The webcam image is unmirrored: moving right in the image is the player's left.
             if (delta > MOVE_THRESHOLD) {
                 if (!checkCollision(currentPiece, -1, 0)) currentPiece.x--;
+                moveAnchorX = centerX;
                 lastMoveTime = now;
                 render();
             } else if (delta < -MOVE_THRESHOLD) {
                 if (!checkCollision(currentPiece, 1, 0)) currentPiece.x++;
+                moveAnchorX = centerX;
                 lastMoveTime = now;
                 render();
             }
         }
-        lastHandX = centerX;
 
-        // 旋转控制
         const indexMcp = landmarks[5];
         const pinkyMcp = landmarks[17];
         const angle = Math.atan2(pinkyMcp.y - indexMcp.y, pinkyMcp.x - indexMcp.x) * 180 / Math.PI;
 
-        if (lastHandAngle !== null && now - lastRotateTime > ROTATE_COOLDOWN) {
-            let deltaAngle = angle - lastHandAngle;
+        if (rotationAnchorAngle === null) {
+            rotationAnchorAngle = angle;
+        } else if (now - lastRotateTime > ROTATE_COOLDOWN) {
+            let deltaAngle = angle - rotationAnchorAngle;
             if (deltaAngle > 180) deltaAngle -= 360;
             if (deltaAngle < -180) deltaAngle += 360;
 
             if (deltaAngle > ROTATE_THRESHOLD) {
                 rotatePiece(-1);
                 lastRotateTime = now;
-                lastHandAngle = angle;
+                rotationAnchorAngle = angle;
                 render();
             } else if (deltaAngle < -ROTATE_THRESHOLD) {
                 rotatePiece(1);
                 lastRotateTime = now;
-                lastHandAngle = angle;
+                rotationAnchorAngle = angle;
                 render();
             }
-        } else {
-            lastHandAngle = angle;
         }
-
-        // 握拳重置
-        if (checkIsFist(landmarks) && now - lastFistTime > FIST_COOLDOWN) {
-            resetGame();
-            lastFistTime = now;
-        }
+        setGestureStatus('右手已识别，手势控制已启用');
     }
 
     function checkIsFist(landmarks) {
         const tips = [8, 12, 16, 20];
         const pips = [6, 10, 14, 18];
+        const wrist = landmarks[0];
         let folded = 0;
         for (let i = 0; i < 4; i++) {
-            if (landmarks[tips[i]].y > landmarks[pips[i]].y) folded++;
+            const tipDistance = Math.hypot(landmarks[tips[i]].x - wrist.x, landmarks[tips[i]].y - wrist.y);
+            const pipDistance = Math.hypot(landmarks[pips[i]].x - wrist.x, landmarks[pips[i]].y - wrist.y);
+            if (tipDistance < pipDistance * 1.1) folded++;
         }
         return folded >= 3;
     }

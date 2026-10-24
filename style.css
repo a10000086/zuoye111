@@ -80,6 +80,13 @@ body{
     font-weight:bold;
     text-align:right;
 }
+.gesture-status{
+    max-width:200px;
+    color:#333;
+    font-size:14px;
+    line-height:1.5;
+    text-align:center;
+}
 
 /* ========== 移动端适配 ========== */
 @media (max-width: 992px) {
@@ -124,6 +131,9 @@ body{
     .point-num{
         font-size:36px;
     }
+    .gesture-status{
+        max-width:160px;
+    }
     .point-wrap{
         width: auto;
     }
@@ -160,6 +170,9 @@ body{
     .point-num{
         font-size:28px;
     }
+    .gesture-status{
+        max-width:130px;
+        font-size:12px;
+    }
 }
-
 
