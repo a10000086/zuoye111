@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ========== 音量控制 ==========
     const soundBtn = document.querySelector('.sound-btn');
     const soundIcon = document.getElementById('soundIcon');
-    const gameAudio = document.getElementById('gameAudio');
 
     const soundIconList = [
         'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp',
@@ -11,15 +10,87 @@ document.addEventListener('DOMContentLoaded', () => {
         'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E5%A3%B0%E9%9F%B3%E5%A4%A7.webp'
     ];
     const volumeLevel = [0, 0.3, 0.6, 1];
-    let volumeIndex = 0;
-    gameAudio.volume = volumeLevel[volumeIndex];
+    let volumeIndex = 1;
+    let audioContext = null;
+    let masterGain = null;
+    soundIcon.src = soundIconList[volumeIndex];
+
+    function initializeAudio() {
+        if (audioContext) return true;
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+            console.error('当前浏览器不支持 Web Audio，无法播放游戏音效');
+            return false;
+        }
+
+        audioContext = new AudioContextClass();
+        masterGain = audioContext.createGain();
+        masterGain.gain.value = volumeLevel[volumeIndex];
+        masterGain.connect(audioContext.destination);
+        return true;
+    }
+
+    function unlockAudio() {
+        if (!initializeAudio()) return;
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(error => {
+                console.error('无法启用游戏音效', error);
+            });
+        }
+    }
+
+    function playElectronicNotes(notes, waveform, noteDuration, gap, volume = 0.16) {
+        if (volumeIndex === 0 || !initializeAudio() || audioContext.state !== 'running') return;
+
+        const startTime = audioContext.currentTime;
+        notes.forEach((frequency, index) => {
+            const start = startTime + index * gap;
+            const oscillator = audioContext.createOscillator();
+            const envelope = audioContext.createGain();
+            oscillator.type = waveform;
+            oscillator.frequency.setValueAtTime(frequency, start);
+            oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.94, start + noteDuration);
+            envelope.gain.setValueAtTime(0.0001, start);
+            envelope.gain.exponentialRampToValueAtTime(volume, start + 0.008);
+            envelope.gain.exponentialRampToValueAtTime(0.0001, start + noteDuration);
+            oscillator.connect(envelope);
+            envelope.connect(masterGain);
+            oscillator.start(start);
+            oscillator.stop(start + noteDuration + 0.01);
+        });
+    }
+
+    const pieceLockSounds = [
+        { notes: [196, 294], waveform: 'square' },
+        { notes: [330, 247], waveform: 'triangle' },
+        { notes: [262, 392], waveform: 'square' },
+        { notes: [220, 330], waveform: 'sawtooth' },
+        { notes: [440, 330], waveform: 'triangle' },
+        { notes: [294, 220], waveform: 'sawtooth' },
+        { notes: [349, 262], waveform: 'square' }
+    ];
+
+    function playPieceLockSound(pieceType) {
+        const sound = pieceLockSounds[pieceType];
+        playElectronicNotes(sound.notes, sound.waveform, 0.11, 0.055);
+    }
+
+    function playLineClearSound(linesCleared) {
+        const notes = [523, 659, 784, 1047].slice(0, Math.min(linesCleared + 2, 4));
+        playElectronicNotes(notes, 'square', 0.15, 0.07, 0.13);
+    }
+
+    function playGameOverSound() {
+        playElectronicNotes([392, 330, 262, 196], 'sawtooth', 0.18, 0.13, 0.15);
+    }
 
     soundBtn.addEventListener('click', () => {
         volumeIndex = (volumeIndex + 1) % soundIconList.length;
         soundIcon.src = soundIconList[volumeIndex];
-        gameAudio.volume = volumeLevel[volumeIndex];
-        if (volumeIndex > 0 && gameAudio.paused) {
-            gameAudio.play().catch(() => {});
+        if (initializeAudio()) {
+            masterGain.gain.setTargetAtTime(volumeLevel[volumeIndex], audioContext.currentTime, 0.025);
+            unlockAudio();
         }
     });
 
@@ -39,6 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let nextPiece;
     let score = 0;
     let dropTimer = null;
+    let gameOver = false;
+    let gameOverTimeout = null;
     const dropSpeed = 700;
 
     // 7种方块 - 已修正所有形状数组，旋转状态完整
@@ -152,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function mergePiece() {
+        playPieceLockSound(currentPiece.type);
         const shape = PIECES[currentPiece.type].shapes[currentPiece.rotation];
         const color = PIECES[currentPiece.type].color;
         for (let y = 0; y < shape.length; y++) {
@@ -178,7 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (linesCleared > 0) {
             score += linesCleared * 100 * linesCleared;
             updateScore();
+            playLineClearSound(linesCleared);
         }
+        return linesCleared;
     }
 
     function updateScore() {
@@ -212,8 +288,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (checkCollision(currentPiece)) {
             clearInterval(dropTimer);
-            alert('游戏结束！得分：' + score);
-            resetGame();
+            gameOver = true;
+            playGameOverSound();
+            gameOverTimeout = setTimeout(() => {
+                if (!gameOver) return;
+                gameOverTimeout = null;
+                alert('游戏结束！得分：' + score);
+                resetGame();
+            }, 750);
         }
     }
 
@@ -233,6 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function dropPiece() {
+        if (gameOver) return;
         if (!checkCollision(currentPiece, 0, 1)) {
             currentPiece.y++;
         } else {
@@ -245,6 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function hardDrop() {
+        if (gameOver) return;
         while (!checkCollision(currentPiece, 0, 1)) {
             currentPiece.y++;
         }
@@ -289,6 +373,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetGame() {
         if (dropTimer) clearInterval(dropTimer);
+        if (gameOverTimeout !== null) {
+            clearTimeout(gameOverTimeout);
+            gameOverTimeout = null;
+        }
+        gameOver = false;
         score = 0;
         updateScore();
         createGrid();
@@ -301,6 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 键盘控制 - 已修复上键顺时针旋转
     document.addEventListener('keydown', (e) => {
+        unlockAudio();
+        if (gameOver && e.key !== 'r' && e.key !== 'R') return;
         switch(e.key) {
             case 'ArrowLeft':
                 if (!checkCollision(currentPiece, -1, 0)) currentPiece.x--;
@@ -325,7 +416,10 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
     });
 
-    restartBtn.addEventListener('click', resetGame);
+    restartBtn.addEventListener('click', () => {
+        unlockAudio();
+        resetGame();
+    });
     window.addEventListener('resize', resizeCanvas);
 
     // ========== 页面加载后自动启动游戏，无需点击 ==========
