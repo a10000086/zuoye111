@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ========== 音量控制逻辑 ==========
+    // ========== 音量控制 ==========
     const soundBtn = document.querySelector('.sound-btn');
     const soundIcon = document.getElementById('soundIcon');
     const gameAudio = document.getElementById('gameAudio');
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // ========== 俄罗斯方块核心逻辑 ==========
+    // ========== 俄罗斯方块核心 ==========
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const nextBlockImg = document.getElementById('nextBlockImg');
@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const COLS = 10;
     const ROWS = 20;
     const DEFAULT_BG = '#e84028';
-    let cellSize;
+    let cellW, cellH;
     let grid = [];
     let currentPiece;
     let nextPiece;
@@ -41,67 +41,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let dropTimer = null;
     const dropSpeed = 700;
 
-    // 7种方块定义：形状、颜色、预览图
+    // 7种方块
     const PIECES = [
-        // Z型
-        {
-            shapes: [[[1,1,0],[0,1,1],[0,0,0]], [[0,0,1],[0,1,1],[0,1,0]]],
-            color: '#e02020',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/zz%E6%AD%A3.webp'
-        },
-        // O型
-        {
-            shapes: [[[1,1],[1,1]]],
-            color: '#f5d300',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp'
-        },
-        // T型
-        {
-            shapes: [[[0,1,0],[1,1,1],[0,0,0]], [[0,1,0],[0,1,1],[0,1,0]], [[0,0,0],[1,1,1],[0,1,0]], [[0,1,0],[1,1,0],[0,1,0]]],
-            color: '#a800e8',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/t%E5%9E%8B.webp'
-        },
-        // J型
-        {
-            shapes: [[[1,0,0],[1,1,1],[0,0,0]], [[0,1,1],[0,1,0],[0,1,0]], [[0,0,0],[1,1,1],[0,0,1]], [[0,1,0],[0,1,0],[1,1,0]]],
-            color: '#0058e8',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/%E5%B7%A6%E6%8B%90.webp'
-        },
-        // I型
-        {
-            shapes: [[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]]],
-            color: '#00d8e0',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/%E9%95%BF%E6%9D%A1.webp'
-        },
-        // L型
-        {
-            shapes: [[[0,0,1],[1,1,1],[0,0,0]], [[0,1,0],[0,1,0],[0,1,1]], [[0,0,0],[1,1,1],[1,0,0]], [[1,1,0],[0,1,0],[0,1,0]]],
-            color: '#ed8400',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656556/%E5%8F%B3%E6%8B%90.webp'
-        },
-        // S型
-        {
-            shapes: [[[0,1,1],[1,1,0],[0,0,0]], [[0,1,0],[0,1,1],[0,0,1]]],
-            color: '#00c020',
-            img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656556/zz%E5%8F%8D.webp'
-        }
+        { shapes: [[[1,1,0],[0,1,1],[0,0,0]], [[0,0,1],[0,1,1],[0,1,0]]], color: '#e02020', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/zz%E6%AD%A3.webp' },
+        { shapes: [[[1,1],[1,1]]], color: '#f5d300', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp' },
+        { shapes: [[[0,1,0],[1,1,1],[0,0,0]], [[0,1,0],[0,1,1],[0,1,0]], [[0,0,0],[1,1,1],[0,1,0]], [[0,1,0],[1,1,0],[0,1,0]]], color: '#a800e8', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/t%E5%9E%8B.webp' },
+        { shapes: [[[1,0,0],[1,1,1],[0,0,0]], [[0,1,1],[0,1,0],[0,1,0]], [[0,0,0],[1,1,1],[0,0,1]], [[0,1,0],[0,1,0],[1,1,0]]], color: '#0058e8', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/%E5%B7%A6%E6%8B%90.webp' },
+        { shapes: [[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]], [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]]], color: '#00d8e0', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656557/%E9%95%BF%E6%9D%A1.webp' },
+        { shapes: [[[0,0,1],[1,1,1],[0,0,0]], [[0,1,0],[0,1,0],[0,1,1]], [[0,0,0],[1,1,1],[1,0,0]], [[1,1,0],[0,1,0],[0,1,0]]], color: '#ed8400', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656556/%E5%8F%B3%E6%8B%90.webp' },
+        { shapes: [[[0,1,1],[1,1,0],[0,0,0]], [[0,1,0],[0,1,1],[0,0,1]]], color: '#00c020', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656556/zz%E5%8F%8D.webp' }
     ];
 
-    // 初始化画布尺寸
+    // 画布尺寸适配，网格铺满整个白色区域
     function resizeCanvas() {
         const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
-        cellSize = Math.min(canvas.width / COLS, canvas.height / ROWS);
+        cellW = canvas.width / COLS;
+        cellH = canvas.height / ROWS;
         render();
     }
 
-    // 创建空网格
     function createGrid() {
         grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
     }
 
-    // 随机生成方块
     function randomPiece() {
         const type = Math.floor(Math.random() * PIECES.length);
         return {
@@ -112,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 碰撞检测
+    // 碰撞检测：精确到每个有效方块格，允许方块形状外的空列越界
     function checkCollision(piece, offsetX = 0, offsetY = 0, newRotation = null) {
         const rot = newRotation !== null ? newRotation : piece.rotation;
         const shape = PIECES[piece.type].shapes[rot];
@@ -129,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
-    // 方块落地合并到网格
     function mergePiece() {
         const shape = PIECES[currentPiece.type].shapes[currentPiece.rotation];
         const color = PIECES[currentPiece.type].color;
@@ -144,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 消除满行
     function clearLines() {
         let linesCleared = 0;
         for (let y = ROWS - 1; y >= 0; y--) {
@@ -161,12 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 更新分数显示
     function updateScore() {
         scoreNum.textContent = score.toString().padStart(4, '0');
     }
 
-    // 更新背景色：统计最多的方块颜色
+    // 实时更新背景色
     function updateBgColor() {
         const colorCount = {};
         let maxColor = null;
@@ -186,13 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.style.backgroundColor = maxColor || DEFAULT_BG;
     }
 
-    // 生成新方块
     function spawnNewPiece() {
         currentPiece = nextPiece;
         nextPiece = randomPiece();
         nextBlockImg.src = PIECES[nextPiece.type].img;
 
-        // 游戏结束检测
         if (checkCollision(currentPiece)) {
             clearInterval(dropTimer);
             alert('游戏结束！得分：' + score);
@@ -200,15 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 旋转方块
+    // 旋转增加墙踢，贴边时自动修正位置
     function rotatePiece() {
         const newRotation = (currentPiece.rotation + 1) % PIECES[currentPiece.type].shapes.length;
-        if (!checkCollision(currentPiece, 0, 0, newRotation)) {
-            currentPiece.rotation = newRotation;
+        // 尝试原位置、左移1格、右移1格、左移2格、右移2格
+        const kicks = [0, -1, 1, -2, 2];
+        for (let kick of kicks) {
+            if (!checkCollision(currentPiece, kick, 0, newRotation)) {
+                currentPiece.x += kick;
+                currentPiece.rotation = newRotation;
+                return;
+            }
         }
     }
 
-    // 方块下落一格
     function dropPiece() {
         if (!checkCollision(currentPiece, 0, 1)) {
             currentPiece.y++;
@@ -221,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
     }
 
-    // 快速下落到底
     function hardDrop() {
         while (!checkCollision(currentPiece, 0, 1)) {
             currentPiece.y++;
@@ -233,29 +196,23 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
     }
 
-    // 渲染画面
+    // 渲染：网格铺满整个画布，无左右留白
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const offsetX = (canvas.width - COLS * cellSize) / 2;
-        const offsetY = (canvas.height - ROWS * cellSize) / 2;
-
-        // 绘制已固定的方块
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
                 if (grid[y][x]) {
-                    drawCell(offsetX + x * cellSize, offsetY + y * cellSize, grid[y][x]);
+                    drawCell(x * cellW, y * cellH, grid[y][x]);
                 }
             }
         }
-
-        // 绘制当前下落的方块
         const shape = PIECES[currentPiece.type].shapes[currentPiece.rotation];
         const color = PIECES[currentPiece.type].color;
         for (let y = 0; y < shape.length; y++) {
             for (let x = 0; x < shape[y].length; x++) {
                 if (shape[y][x]) {
-                    const drawX = offsetX + (currentPiece.x + x) * cellSize;
-                    const drawY = offsetY + (currentPiece.y + y) * cellSize;
+                    const drawX = (currentPiece.x + x) * cellW;
+                    const drawY = (currentPiece.y + y) * cellH;
                     if (currentPiece.y + y >= 0) {
                         drawCell(drawX, drawY, color);
                     }
@@ -264,16 +221,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 绘制单个格子
     function drawCell(x, y, color) {
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
+        ctx.fillRect(x, y, cellW - 1, cellH - 1);
         ctx.strokeStyle = 'rgba(0,0,0,0.3)';
         ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
+        ctx.strokeRect(x, y, cellW - 1, cellH - 1);
     }
 
-    // 重置游戏
     function resetGame() {
         clearInterval(dropTimer);
         score = 0;
@@ -308,13 +263,10 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
     });
 
-    // 重启按钮点击
     restartBtn.addEventListener('click', resetGame);
-
-    // 窗口大小变化自适应
     window.addEventListener('resize', resizeCanvas);
 
-    // 游戏启动
+    // 启动游戏
     resizeCanvas();
     createGrid();
     nextPiece = randomPiece();
