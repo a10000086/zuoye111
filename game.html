@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>俄罗斯方块 - 游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <video id="webcam" autoplay playsinline muted style="display: none;"></video>
+
+    <div class="container">
+        <div class="canvas-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="sidebar">
+            <button class="btn next-btn" disabled>
+                <img id="nextBlockImg" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp" alt="next">
+            </button>
+            <div class="text-next">NEXT</div>
+
+            <div class="point-wrap">
+                <div class="point-text">Point</div>
+                <div class="point-num" id="scoreNum">0000</div>
+            </div>
+
+            <button class="btn sound-btn">
+                <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp" alt="sound">
+            </button>
+
+            <button class="btn restart-btn" id="restartBtn">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                </svg>
+                <span>restart</span>
+            </button>
+        </div>
+    </div>
+
+    <audio id="gameAudio" src="" loop>
+
+    <!-- 指定稳定版本，避免CDN路径变动导致加载失败 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

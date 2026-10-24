@@ -2,44 +2,45 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>俄罗斯方块</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块 - 开始</title>
+    <link rel="stylesheet" href="style-index.css">
 </head>
 <body>
-    <div class="container">
-        <div class="canvas-area">
-            <canvas id="gameCanvas"></canvas>
-        </div>
-        <div class="sidebar">
-            <!-- 下一个方块预览 -->
-            <button class="btn next-btn" disabled>
-                <img id="nextBlockImg" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp" alt="next">
-            </button>
-            <div class="text-next">NEXT</div>
+    <div class="room-card">
+        <h1>俄罗斯方块 · Tetris</h1>
+        <p class="subtitle">经典休闲游戏 · 支持手势操控</p>
 
-            <div class="point-wrap">
-                <div class="point-text">Point</div>
-                <div class="point-num" id="scoreNum">0000</div>
+        <div class="instruction-wrap">
+            <h3>操作说明 · Instructions</h3>
+            
+            <div class="instruction-block">
+                <h4>键盘操作 · Keyboard</h4>
+                <p>← → 方向键：左右移动方块 · Move left/right</p>
+                <p>↑ 方向键：旋转方块 · Rotate</p>
+                <p>↓ 方向键：加速下落 · Soft drop</p>
+                <p>空格键：直接落地 · Hard drop</p>
+                <p>R 键：重置游戏 · Restart</p>
             </div>
 
-            <!-- 音量按钮 -->
-            <button class="btn sound-btn">
-                <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp" alt="sound">
-            </button>
+            <div class="instruction-block">
+                <h4>手势操作 · Gesture（右手正对摄像头）</h4>
+                <p>手向左移动 → 方块左移 · Move left</p>
+                <p>手向右移动 → 方块右移 · Move right</p>
+                <p>手腕左转 → 方块逆时针旋转 · Rotate CCW</p>
+                <p>手腕右转 → 方块顺时针旋转 · Rotate CW</p>
+                <p>握拳手势 → 重置游戏 · Restart</p>
+            </div>
 
-            <!-- 重启按钮 -->
-            <button class="btn restart-btn" id="restartBtn">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                    <path d="M3 3v5h5"/>
-                </svg>
-                <span>restart</span>
-            </button>
+            <p class="tip">
+                请后退至摄像头可完整捕捉你的右手，保持光线充足<br>
+                Step back so the camera sees your right hand, keep good lighting
+            </p>
         </div>
-    </div>
 
-    <audio id="gameAudio" src="" loop>
-    <script src="script.js"></script>
+        <button class="enter-btn" onclick="window.location.href='game.html'">
+            开始游戏 · Start Game
+        </button>
+    </div>
 </body>
 </html>
