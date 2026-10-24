@@ -329,16 +329,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
 
     // ========== 页面加载后自动启动游戏，无需点击 ==========
-    resizeCanvas();
     createGrid();
     nextPiece = randomPiece();
     spawnNewPiece();
+    resizeCanvas();
     dropTimer = setInterval(dropPiece, dropSpeed);
     render();
 
     // ========== 摄像头手势控制（异步加载，失败不影响游戏） ==========
     const videoElement = document.getElementById('webcam');
     const gestureStatus = document.getElementById('gestureStatus');
+    const cameraRetryBtn = document.getElementById('cameraRetryBtn');
+    let cameraStream = null;
+    let cameraFrameId = null;
+    let hands = null;
+    let cameraStarting = false;
     let moveAnchorX = null;
     let rotationAnchorAngle = null;
     let lastMoveTime = 0;
@@ -358,48 +363,102 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function initGestureControl() {
-        if (typeof Hands === 'undefined' || typeof Camera === 'undefined') {
-            setGestureStatus('手势识别库加载失败，请检查网络或使用键盘操作');
-            console.error('手势识别库加载失败');
-            return;
-        }
-        if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-            setGestureStatus('摄像头需要在 HTTPS 或 localhost 页面中使用');
-            return;
-        }
+    function loadHandsLibrary() {
+        if (typeof Hands !== 'undefined') return Promise.resolve();
 
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js';
+            script.onload = () => {
+                if (typeof Hands === 'undefined') {
+                    reject(new Error('MediaPipe Hands 加载后不可用'));
+                    return;
+                }
+                resolve();
+            };
+            script.onerror = () => reject(new Error('无法加载手势识别库，请检查网络后重试'));
+            document.head.appendChild(script);
+        });
+    }
+
+    async function startCamera() {
+        if (cameraStarting || cameraStream) return;
+        cameraStarting = true;
+        cameraRetryBtn.disabled = true;
+        setGestureStatus('正在请求摄像头权限…');
         try {
-            setGestureStatus('请在浏览器弹窗中允许使用摄像头');
-            const hands = new Hands({
+            if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+                throw new Error('摄像头只能在 HTTPS 或 localhost 网页中使用，请勿直接双击打开 HTML 文件');
+            }
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: {
+                    facingMode: { ideal: 'user' },
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            });
+            videoElement.srcObject = cameraStream;
+            await videoElement.play();
+
+            await loadHandsLibrary();
+
+            hands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
             });
-
             hands.setOptions({
                 maxNumHands: 1,
                 modelComplexity: 1,
                 minDetectionConfidence: 0.7,
                 minTrackingConfidence: 0.5
             });
-
             hands.onResults(handleHandGesture);
-
-            const camera = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({ image: videoElement }); },
-                width: 640,
-                height: 480
-            });
-            await camera.start();
             setGestureStatus('摄像头已连接，请将右手置于画面中');
+            cameraFrameId = requestAnimationFrame(processCameraFrame);
         } catch (e) {
             const messages = {
-                NotAllowedError: '摄像头权限被拒绝，请在浏览器设置中允许访问',
-                NotFoundError: '未找到可用摄像头',
-                NotReadableError: '摄像头正被其他应用占用',
-                SecurityError: '浏览器安全策略阻止了摄像头访问'
+                NotAllowedError: '摄像头权限被拒绝。请在浏览器地址栏的网站设置中将摄像头设为“允许”，再点重试',
+                NotFoundError: '未找到摄像头，请检查设备连接',
+                NotReadableError: '摄像头正被其他应用占用，请关闭其他应用后重试',
+                SecurityError: '浏览器安全策略阻止摄像头访问，请通过 HTTPS 或 localhost 打开页面',
+                OverconstrainedError: '摄像头不支持请求的分辨率，请检查设备后重试',
+                AbortError: '摄像头启动中断，请重试'
             };
-            setGestureStatus(messages[e.name] || `摄像头启动失败：${e.message || '未知错误'}`);
+            stopCamera();
+            setGestureStatus(messages[e.name] || `摄像头启动失败：${e.message || e.name || '未知错误'}`);
             console.error('摄像头启动失败', e);
+        } finally {
+            cameraStarting = false;
+            cameraRetryBtn.disabled = false;
+        }
+    }
+
+    function stopCamera() {
+        if (cameraFrameId !== null) {
+            cancelAnimationFrame(cameraFrameId);
+            cameraFrameId = null;
+        }
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+        videoElement.srcObject = null;
+    }
+
+    async function processCameraFrame() {
+        if (!cameraStream || !hands) return;
+        try {
+            if (videoElement.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                await hands.send({ image: videoElement });
+            }
+            if (cameraStream) {
+                cameraFrameId = requestAnimationFrame(processCameraFrame);
+            }
+        } catch (e) {
+            console.error('手势识别处理失败', e);
+            stopCamera();
+            setGestureStatus(`摄像头已连接，但手势识别失败：${e.message || '请检查网络后重试'}`);
         }
     }
 
@@ -496,6 +555,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return folded >= 3;
     }
 
-    // 启动手势识别
-    initGestureControl();
+    cameraRetryBtn.addEventListener('click', startCamera);
+    startCamera();
 });

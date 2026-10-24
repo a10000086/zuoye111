@@ -7,8 +7,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <video id="webcam" autoplay playsinline muted style="display: none;"></video>
-
     <div class="container">
         <div class="canvas-area">
             <canvas id="gameCanvas"></canvas>
@@ -27,6 +25,10 @@
             <div class="gesture-status" id="gestureStatus" role="status" aria-live="polite">
                 正在请求摄像头权限…
             </div>
+            <video id="webcam" class="camera-preview" autoplay playsinline muted></video>
+            <button class="camera-retry-btn" id="cameraRetryBtn" type="button">
+                重试连接摄像头
+            </button>
 
             <button class="btn sound-btn">
                 <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp" alt="sound">
@@ -46,7 +48,6 @@
 
     <!-- 指定稳定版本，避免CDN路径变动导致加载失败 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
