@@ -80,6 +80,9 @@ body{
     font-weight:bold;
     text-align:right;
 }
+.mobile-controls{
+    display:none;
+}
 .gesture-status{
     max-width:200px;
     color:#333;
@@ -163,6 +166,53 @@ body{
     .point-wrap{
         width: auto;
     }
+    .mobile-controls{
+        display:grid;
+        grid-template-columns:repeat(3, 54px);
+        grid-template-rows:repeat(2, 54px);
+        gap:6px;
+        grid-template-areas:
+            ". up ."
+            "left down right";
+        touch-action:manipulation;
+    }
+    .mobile-control-btn{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:54px;
+        height:54px;
+        padding:8px;
+        border:1px solid #888;
+        border-radius:12px;
+        background:#fff;
+        box-shadow:0 2px 3px rgba(0,0,0,.2);
+        touch-action:manipulation;
+        -webkit-tap-highlight-color:transparent;
+    }
+    .mobile-control-btn:active{
+        transform:scale(.92);
+        background:#eee;
+    }
+    .mobile-control-btn img{
+        display:block;
+        width:100%;
+        height:100%;
+        object-fit:contain;
+        pointer-events:none;
+    }
+    .mobile-control-btn[data-game-action="ArrowUp"]{
+        grid-area:up;
+    }
+    .mobile-control-btn[data-game-action="ArrowLeft"]{
+        grid-area:left;
+    }
+    .mobile-control-btn[data-game-action="ArrowDown"]{
+        grid-area:down;
+    }
+    .mobile-control-btn[data-game-action="ArrowRight"]{
+        grid-area:right;
+    }
 }
 
 @media (max-width: 480px) {
@@ -203,5 +253,16 @@ body{
     .camera-preview{
         width:120px;
         height:80px;
+    }
+    .mobile-controls{
+        grid-template-columns:repeat(3, 48px);
+        grid-template-rows:repeat(2, 48px);
+        gap:5px;
+    }
+    .mobile-control-btn{
+        width:48px;
+        height:48px;
+        padding:7px;
+        border-radius:10px;
     }
 }

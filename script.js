@@ -388,11 +388,10 @@ document.addEventListener('DOMContentLoaded', () => {
         render();
     }
 
-    // 键盘控制 - 已修复上键顺时针旋转
-    document.addEventListener('keydown', (e) => {
+    function handleGameAction(action) {
         unlockAudio();
-        if (gameOver && e.key !== 'r' && e.key !== 'R') return;
-        switch(e.key) {
+        if (gameOver && action !== 'r' && action !== 'R') return;
+        switch(action) {
             case 'ArrowLeft':
                 if (!checkCollision(currentPiece, -1, 0)) currentPiece.x--;
                 break;
@@ -414,11 +413,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
         render();
+    }
+
+    // Keyboard and touch controls share the same action handler.
+    document.addEventListener('keydown', (e) => {
+        if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' '].includes(e.key)) {
+            e.preventDefault();
+        }
+        handleGameAction(e.key);
     });
 
-    restartBtn.addEventListener('click', () => {
-        unlockAudio();
-        resetGame();
+    restartBtn.addEventListener('click', () => handleGameAction('r'));
+    document.querySelectorAll('.mobile-control-btn').forEach(button => {
+        button.addEventListener('click', () => handleGameAction(button.dataset.gameAction));
     });
     window.addEventListener('resize', resizeCanvas);
 
