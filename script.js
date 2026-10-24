@@ -33,7 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const COLS = 10;
     const ROWS = 20;
     const DEFAULT_BG = '#e84028';
-    let cellW, cellH;
+    let cellSize;
+    let offsetX, offsetY;
     let grid = [];
     let currentPiece;
     let nextPiece;
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let dropTimer = null;
     const dropSpeed = 700;
 
-    // 7种方块
+    // 7种方块 颜色与素材对应
     const PIECES = [
         { shapes: [[[1,1,0],[0,1,1],[0,0,0]], [[0,0,1],[0,1,1],[0,1,0]]], color: '#e02020', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/zz%E6%AD%A3.webp' },
         { shapes: [[[1,1],[1,1]]], color: '#f5d300', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp' },
@@ -52,13 +53,14 @@ document.addEventListener('DOMContentLoaded', () => {
         { shapes: [[[0,1,1],[1,1,0],[0,0,0]], [[0,1,0],[0,1,1],[0,0,1]]], color: '#00c020', img: 'https://res.cloudinary.com/w24obzi2/image/upload/v1792656556/zz%E5%8F%8D.webp' }
     ];
 
-    // 画布尺寸适配，网格铺满整个白色区域
+    // 画布适配：正方形格子，保证方块不变形，网格居中
     function resizeCanvas() {
         const rect = canvas.parentElement.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
-        cellW = canvas.width / COLS;
-        cellH = canvas.height / ROWS;
+        cellSize = Math.min(canvas.width / COLS, canvas.height / ROWS);
+        offsetX = (canvas.width - COLS * cellSize) / 2;
+        offsetY = (canvas.height - ROWS * cellSize) / 2;
         render();
     }
 
@@ -76,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // 碰撞检测：精确到每个有效方块格，允许方块形状外的空列越界
+    // 碰撞检测
     function checkCollision(piece, offsetX = 0, offsetY = 0, newRotation = null) {
         const rot = newRotation !== null ? newRotation : piece.rotation;
         const shape = PIECES[piece.type].shapes[rot];
@@ -127,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
         scoreNum.textContent = score.toString().padStart(4, '0');
     }
 
-    // 实时更新背景色
+    // 实时统计全场最多颜色，立即切换背景
     function updateBgColor() {
         const colorCount = {};
         let maxColor = null;
@@ -159,10 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 旋转增加墙踢，贴边时自动修正位置
+    // 旋转带墙踢，贴边也能转
     function rotatePiece() {
         const newRotation = (currentPiece.rotation + 1) % PIECES[currentPiece.type].shapes.length;
-        // 尝试原位置、左移1格、右移1格、左移2格、右移2格
         const kicks = [0, -1, 1, -2, 2];
         for (let kick of kicks) {
             if (!checkCollision(currentPiece, kick, 0, newRotation)) {
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             mergePiece();
             clearLines();
-            updateBgColor();
+            updateBgColor(); // 落地消行后立刻更新背景
             spawnNewPiece();
         }
         render();
@@ -191,28 +192,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         mergePiece();
         clearLines();
-        updateBgColor();
+        updateBgColor(); // 快速落地后立刻更新背景
         spawnNewPiece();
         render();
     }
 
-    // 渲染：网格铺满整个画布，无左右留白
+    // 渲染：正方形格子，居中绘制，保证方块不变形
     function render() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 绘制已固定方块
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
                 if (grid[y][x]) {
-                    drawCell(x * cellW, y * cellH, grid[y][x]);
+                    drawCell(offsetX + x * cellSize, offsetY + y * cellSize, grid[y][x]);
                 }
             }
         }
+        // 绘制当前下落方块
         const shape = PIECES[currentPiece.type].shapes[currentPiece.rotation];
         const color = PIECES[currentPiece.type].color;
         for (let y = 0; y < shape.length; y++) {
             for (let x = 0; x < shape[y].length; x++) {
                 if (shape[y][x]) {
-                    const drawX = (currentPiece.x + x) * cellW;
-                    const drawY = (currentPiece.y + y) * cellH;
+                    const drawX = offsetX + (currentPiece.x + x) * cellSize;
+                    const drawY = offsetY + (currentPiece.y + y) * cellSize;
                     if (currentPiece.y + y >= 0) {
                         drawCell(drawX, drawY, color);
                     }
@@ -223,10 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function drawCell(x, y, color) {
         ctx.fillStyle = color;
-        ctx.fillRect(x, y, cellW - 1, cellH - 1);
+        ctx.fillRect(x, y, cellSize - 1, cellSize - 1);
         ctx.strokeStyle = 'rgba(0,0,0,0.3)';
         ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, cellW - 1, cellH - 1);
+        ctx.strokeRect(x, y, cellSize - 1, cellSize - 1);
     }
 
     function resetGame() {
@@ -273,4 +276,3 @@ document.addEventListener('DOMContentLoaded', () => {
     spawnNewPiece();
     dropTimer = setInterval(dropPiece, dropSpeed);
 });
-
