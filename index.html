@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Game UI</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,32 +11,28 @@
         <div class="canvas-area"></div>
         <div class="sidebar">
             <button class="btn next-btn">
-                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656561/无图像.webp
-
-
-" alt="eye">
+                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656561/%E6%97%A0%E5%9B%BE%E5%83%8F.webp" alt="eye">
             </button>
             <div class="text-next">NEXT</div>
 
-            <div class="point-text">Point</div>
-            <div class="point-num">0000</div>
+            <div class="point-wrap">
+                <div class="point-text">Point</div>
+                <div class="point-num">0000</div>
+            </div>
 
             <button class="btn sound-btn">
-                <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/刷新.webp
-
-
-" alt="sound">
+                <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp" alt="sound">
             </button>
 
             <button class="btn restart-btn">
-                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/静音.webp
-
-
-" alt="restart">
+                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E5%88%B7%E6%96%B0.webpg" alt="restart">
             </button>
         </div>
     </div>
-    <script src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656561/无图像.webp
-"></script>
+
+    <!-- 音频元素，隐藏不显示播放器，替换src为你的音频文件 -->
+    <audio id="gameAudio" src="bgm.mp3" loop>
+
+    <script src="script.js"></script>
 </body>
 </html>
