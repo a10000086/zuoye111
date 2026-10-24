@@ -452,10 +452,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastFistTime = 0;
     let wasFist = false;
 
-    const MOVE_COOLDOWN = 180;
+    const MOVE_COOLDOWN = 100;
     const ROTATE_COOLDOWN = 350;
     const FIST_COOLDOWN = 1200;
-    const MOVE_THRESHOLD = 0.1;
+    const MOVE_THRESHOLD = 0.05;
     const ROTATE_THRESHOLD = 20;
 
     function setGestureStatus(message) {
@@ -604,16 +604,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (now - lastMoveTime > MOVE_COOLDOWN) {
             const delta = centerX - moveAnchorX;
             // The webcam image is unmirrored: moving right in the image is the player's left.
-            if (delta > MOVE_THRESHOLD) {
-                if (!checkCollision(currentPiece, -1, 0)) currentPiece.x--;
-                moveAnchorX = centerX;
+            const steps = Math.floor(Math.abs(delta) / MOVE_THRESHOLD);
+            if (steps > 0) {
+                const direction = delta > 0 ? -1 : 1;
+                let moved = 0;
+                while (moved < steps && !checkCollision(currentPiece, direction, 0)) {
+                    currentPiece.x += direction;
+                    moved++;
+                }
+
+                if (moved < steps) {
+                    moveAnchorX = centerX;
+                } else {
+                    moveAnchorX += Math.sign(delta) * moved * MOVE_THRESHOLD;
+                }
                 lastMoveTime = now;
-                render();
-            } else if (delta < -MOVE_THRESHOLD) {
-                if (!checkCollision(currentPiece, 1, 0)) currentPiece.x++;
-                moveAnchorX = centerX;
-                lastMoveTime = now;
-                render();
+                if (moved > 0) render();
             }
         }
 
