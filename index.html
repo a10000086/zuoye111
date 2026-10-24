@@ -1,38 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game UI</title>
+    <title>俄罗斯方块</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <div class="canvas-area"></div>
+        <div class="canvas-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
         <div class="sidebar">
-            <button class="btn next-btn">
-                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656561/%E6%97%A0%E5%9B%BE%E5%83%8F.webp" alt="eye">
+            <!-- 下一个方块预览 -->
+            <button class="btn next-btn" disabled>
+                <img id="nextBlockImg" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E6%96%B9%E5%9D%97.webp" alt="next">
             </button>
             <div class="text-next">NEXT</div>
 
             <div class="point-wrap">
                 <div class="point-text">Point</div>
-                <div class="point-num">0000</div>
+                <div class="point-num" id="scoreNum">0000</div>
             </div>
 
+            <!-- 音量按钮 -->
             <button class="btn sound-btn">
                 <img id="soundIcon" src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E9%9D%99%E9%9F%B3.webp" alt="sound">
             </button>
 
-            <button class="btn restart-btn">
-                <img src="https://res.cloudinary.com/w24obzi2/image/upload/v1792656560/%E5%88%B7%E6%96%B0.webp" alt="restart">
+            <!-- 重启按钮 -->
+            <button class="btn restart-btn" id="restartBtn">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                </svg>
+                <span>restart</span>
             </button>
         </div>
     </div>
 
-    <!-- 音频元素，隐藏不显示播放器，替换src为你的音频文件 -->
-    <audio id="gameAudio" src="bgm.mp3" loop>
-
+    <audio id="gameAudio" src="" loop>
     <script src="script.js"></script>
 </body>
 </html>
