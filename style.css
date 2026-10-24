@@ -17,8 +17,8 @@ body{
     align-items:flex-start;
 }
 .canvas-area{
-    width:760px;
-    height:840px;
+    width: 420px;
+    aspect-ratio: 1 / 2;
     background:#ffffff;
     border:2px solid #aaa;
 }
@@ -88,8 +88,8 @@ body{
         align-items: center;
     }
     .canvas-area{
-        width: min(90vw, 600px);
-        height: min(110vw, 660px);
+        width: min(60vw, 320px);
+        aspect-ratio: 1 / 2;
     }
     .sidebar{
         flex-direction: row;
@@ -131,8 +131,8 @@ body{
 
 @media (max-width: 480px) {
     .canvas-area{
-        width: 92vw;
-        height: 105vw;
+        width: 55vw;
+        aspect-ratio: 1 / 2;
     }
     .btn{
         width: 85px;
@@ -161,3 +161,4 @@ body{
         font-size:28px;
     }
 }
+
